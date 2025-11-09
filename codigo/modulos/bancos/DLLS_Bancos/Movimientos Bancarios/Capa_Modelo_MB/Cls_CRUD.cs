@@ -26,7 +26,7 @@ namespace Capa_Modelo_MB
             if (mov == null) throw new ArgumentNullException(nameof(mov));
             if (lst_Detalles == null) lst_Detalles = new List<Cls_Sentencias.Cls_MovimientoDetalle>();
 
-            // VALIDACIONES: IDs reales (INT) según el schema
+            // VALIDACIONES
             if (mov.iFk_Id_cuenta_origen <= 0)
                 throw new Exception("La cuenta origen es requerida");
             if (mov.iFk_Id_operacion <= 0)
@@ -45,28 +45,28 @@ namespace Capa_Modelo_MB
                 {
                     try
                     {
-                        // 1) Signo de la operación
+                        // Signo de la operación
                         string signo = fun_obtener_signo_operacion(mov.iFk_Id_operacion, cn, tx);
                         decimal factor = (signo == "+") ? 1m : -1m;
 
-                        // 2) Consecutivo por (cuenta/operación)
+                        // 2Consecutivo por (cuenta/operación)
                         int pkMov = fun_obtener_proximo_id_movimiento(mov.iFk_Id_cuenta_origen, mov.iFk_Id_operacion, cn, tx);
 
-                        // 3) Actualizar saldos de la cuenta bancaria (tabla Tbl_CuentasBancarias)
+                        // Actualizar saldos de la cuenta bancaria (tabla Tbl_CuentasBancarias)
                         fun_actualizar_saldo_cuenta(mov.iFk_Id_cuenta_origen, mov.deCmp_valor_total * factor, cn, tx);
 
-                        // 4) Si hay cuenta destino bancaria, aplícala en positivo
+                        // Si hay cuenta destino bancaria, aplícala en positivo
                         if (mov.iFk_Id_cuenta_destino.HasValue && mov.iFk_Id_cuenta_destino.Value > 0)
                             fun_actualizar_saldo_cuenta(mov.iFk_Id_cuenta_destino.Value, mov.deCmp_valor_total, cn, tx);
 
-                        // 5) Insertar encabezado (coincidir NOMBRES de propiedades con tu botón)
+                        // Insertar encabezado 
                         const string sqlEnc = @"
-                    INSERT INTO Tbl_MovimientoBancarioEncabezado
-                    (Pk_Id_Movimiento, Fk_Id_CuentaOrigen, Fk_Id_Operacion,
-                     Cmp_NumeroDocumento, Cmp_Fecha, Cmp_Concepto, Cmp_MontoTotal,
-                     Fk_Id_TipoPago, Fk_Id_CuentaDestino, Cmp_Beneficiario, Cmp_Estado,
-                     Cmp_Conciliado, Cmp_UsuarioRegistro, Fk_Id_Moneda)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                                        INSERT INTO Tbl_MovimientoBancarioEncabezado
+                                        (Pk_Id_Movimiento, Fk_Id_CuentaOrigen, Fk_Id_Operacion,
+                                         Cmp_NumeroDocumento, Cmp_Fecha, Cmp_Concepto, Cmp_MontoTotal,
+                                         Fk_Id_TipoPago, Fk_Id_CuentaDestino, Cmp_Beneficiario, Cmp_Estado,
+                                         Cmp_Conciliado, Cmp_UsuarioRegistro, Fk_Id_Moneda)
+                                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
                         using (var cmd = new OdbcCommand(sqlEnc, cn, tx))
                         {
                             cmd.Parameters.AddWithValue("@Pk", pkMov);
@@ -90,7 +90,7 @@ namespace Capa_Modelo_MB
                             mov.iPk_Id_movimiento = pkMov;
                         }
 
-                        // 6) Detalles (coincidir NOMBRES de propiedades con tu botón)
+                        // Detalles (coincidir NOMBRES de propiedades con tu botón)
                         if (lst_Detalles.Count == 0)
                         {
                             // usa la cuenta por defecto del parámetro y el mismo monto
@@ -113,7 +113,6 @@ namespace Capa_Modelo_MB
             }
         }
 
-
         private void fun_crear_detalle_automatico_COMPAT(Cls_Sentencias mov, string signo, OdbcConnection cn, OdbcTransaction tx)
         {
             string cuentaContable = fun_obtener_cuenta_contable_por_defecto();
@@ -122,11 +121,11 @@ namespace Capa_Modelo_MB
             int idDet = fun_obtener_proximo_id_detalle(mov.iPk_Id_movimiento, mov.iFk_Id_cuenta_origen, mov.iFk_Id_operacion, cn, tx);
 
             const string sql = @"
-        INSERT INTO Tbl_MovimientoBancarioDetalle
-        (Fk_Id_Movimiento, Fk_Id_CuentaOrigen, Fk_Id_Operacion, Pk_Id_Detalle,
-         Fk_Id_CuentaContable, Cmp_TipoOperacion, Cmp_Valor, Cmp_Descripcion,
-         Cmp_OrdenDetalle, Cmp_UsuarioRegistro)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                            INSERT INTO Tbl_MovimientoBancarioDetalle
+                            (Fk_Id_Movimiento, Fk_Id_CuentaOrigen, Fk_Id_Operacion, Pk_Id_Detalle,
+                             Fk_Id_CuentaContable, Cmp_TipoOperacion, Cmp_Valor, Cmp_Descripcion,
+                             Cmp_OrdenDetalle, Cmp_UsuarioRegistro)
+                            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
             using (var cmd = new OdbcCommand(sql, cn, tx))
             {
@@ -153,11 +152,11 @@ namespace Capa_Modelo_MB
             int idDet = fun_obtener_proximo_id_detalle(mov.iPk_Id_movimiento, mov.iFk_Id_cuenta_origen, mov.iFk_Id_operacion, cn, tx);
 
             const string sql = @"
-        INSERT INTO Tbl_MovimientoBancarioDetalle
-        (Fk_Id_Movimiento, Fk_Id_CuentaOrigen, Fk_Id_Operacion, Pk_Id_Detalle,
-         Fk_Id_CuentaContable, Cmp_TipoOperacion, Cmp_Valor, Cmp_Descripcion,
-         Cmp_OrdenDetalle, Cmp_UsuarioRegistro)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                        INSERT INTO Tbl_MovimientoBancarioDetalle
+                        (Fk_Id_Movimiento, Fk_Id_CuentaOrigen, Fk_Id_Operacion, Pk_Id_Detalle,
+                         Fk_Id_CuentaContable, Cmp_TipoOperacion, Cmp_Valor, Cmp_Descripcion,
+                         Cmp_OrdenDetalle, Cmp_UsuarioRegistro)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
             int orden = 1;
             foreach (var d in dets)
@@ -185,7 +184,6 @@ namespace Capa_Modelo_MB
                 orden++;
             }
         }
-
 
         private string fun_obtener_signo_operacion(int iIdOperacion, OdbcConnection connection, OdbcTransaction transaction)
         {
@@ -238,12 +236,12 @@ namespace Capa_Modelo_MB
         private void fun_insertar_encabezado_movimiento(Cls_Sentencias mov, int iIdMovimiento, OdbcConnection connection, OdbcTransaction transaction)
         {
             string sSql = @"
-                INSERT INTO Tbl_MovimientoBancarioEncabezado
-                (Pk_Id_Movimiento, Fk_Id_CuentaOrigen, Fk_Id_Operacion,
-                 Cmp_NumeroDocumento, Cmp_Fecha, Cmp_Concepto, Cmp_MontoTotal,
-                 Fk_Id_TipoPago, Fk_Id_CuentaDestino, Cmp_Beneficiario, Cmp_Estado,
-                 Cmp_Conciliado, Cmp_UsuarioRegistro, Fk_Id_Moneda)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                    INSERT INTO Tbl_MovimientoBancarioEncabezado
+                    (Pk_Id_Movimiento, Fk_Id_CuentaOrigen, Fk_Id_Operacion,
+                     Cmp_NumeroDocumento, Cmp_Fecha, Cmp_Concepto, Cmp_MontoTotal,
+                     Fk_Id_TipoPago, Fk_Id_CuentaDestino, Cmp_Beneficiario, Cmp_Estado,
+                     Cmp_Conciliado, Cmp_UsuarioRegistro, Fk_Id_Moneda)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
             using (var cmd = new OdbcCommand(sSql, connection, transaction))
             {
                 cmd.Parameters.Add(new OdbcParameter("@Pk", OdbcType.Int) { Value = iIdMovimiento });
@@ -270,19 +268,19 @@ namespace Capa_Modelo_MB
         }
 
         // ===========================
-        // Parámetro cuenta por defecto (catálogo nuevo)
+        // Parámetro cuenta por defecto
         // ===========================
         public string fun_obtener_cuenta_contable_por_defecto()
         {
             try
             {
                 string sSql = @"
-                    SELECT Cmp_Valor 
-                    FROM Tbl_ParametrosCheques 
-                    WHERE Cmp_Estado = 1
-                      AND (Cmp_Parametro = 'CUENTA BANCO PRINCIPAL' OR Cmp_Parametro = 'CUENTA_BANCO_PRINCIPAL')
-                    ORDER BY (Cmp_Parametro = 'CUENTA BANCO PRINCIPAL') DESC
-                    LIMIT 1";
+                        SELECT Cmp_Valor 
+                        FROM Tbl_ParametrosCheques 
+                        WHERE Cmp_Estado = 1
+                          AND (Cmp_Parametro = 'CUENTA BANCO PRINCIPAL' OR Cmp_Parametro = 'CUENTA_BANCO_PRINCIPAL')
+                        ORDER BY (Cmp_Parametro = 'CUENTA BANCO PRINCIPAL') DESC
+                        LIMIT 1";
 
                 using (OdbcConnection odcn_Conn = new Cls_Conexion().fun_conexion_bd())
                 using (OdbcCommand odc_Cmd = new OdbcCommand(sSql, odcn_Conn))
@@ -305,17 +303,17 @@ namespace Capa_Modelo_MB
         {
             // Cuenta por defecto desde parámetros
             string sCuentaContable = fun_obtener_cuenta_contable_por_defecto();
-            // D para positivo, C para negativo (criterio contable básico)
+            // D para positivo, C para negativo 
             string sTipoLinea = sSignoOperacion == "+" ? "D" : "C";
 
             int iProximoIdDetalle = fun_obtener_proximo_id_detalle(mov.iPk_Id_movimiento, mov.iFk_Id_cuenta_origen, mov.iFk_Id_operacion, connection, transaction);
 
             string sSql = @"
-                INSERT INTO Tbl_MovimientoBancarioDetalle
-                (Fk_Id_Movimiento, Fk_Id_CuentaOrigen, Fk_Id_Operacion, Pk_Id_Detalle,
-                 Fk_Id_CuentaContable, Cmp_TipoOperacion, Cmp_Valor, Cmp_Descripcion,
-                 Cmp_OrdenDetalle, Cmp_UsuarioRegistro)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                        INSERT INTO Tbl_MovimientoBancarioDetalle
+                        (Fk_Id_Movimiento, Fk_Id_CuentaOrigen, Fk_Id_Operacion, Pk_Id_Detalle,
+                         Fk_Id_CuentaContable, Cmp_TipoOperacion, Cmp_Valor, Cmp_Descripcion,
+                         Cmp_OrdenDetalle, Cmp_UsuarioRegistro)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
             using (var cmd = new OdbcCommand(sSql, connection, transaction))
             {
@@ -342,11 +340,11 @@ namespace Capa_Modelo_MB
             int iProximoIdDetalle = fun_obtener_proximo_id_detalle(mov.iPk_Id_movimiento, mov.iFk_Id_cuenta_origen, mov.iFk_Id_operacion, connection, transaction);
 
             string sSql = @"
-                INSERT INTO Tbl_MovimientoBancarioDetalle
-                (Fk_Id_Movimiento, Fk_Id_CuentaOrigen, Fk_Id_Operacion, Pk_Id_Detalle,
-                 Fk_Id_CuentaContable, Cmp_TipoOperacion, Cmp_Valor, Cmp_Descripcion,
-                 Cmp_OrdenDetalle, Cmp_UsuarioRegistro)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                        INSERT INTO Tbl_MovimientoBancarioDetalle
+                        (Fk_Id_Movimiento, Fk_Id_CuentaOrigen, Fk_Id_Operacion, Pk_Id_Detalle,
+                         Fk_Id_CuentaContable, Cmp_TipoOperacion, Cmp_Valor, Cmp_Descripcion,
+                         Cmp_OrdenDetalle, Cmp_UsuarioRegistro)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
             int iOrden = 1;
             foreach (var det in lst_Detalles)
@@ -384,9 +382,9 @@ namespace Capa_Modelo_MB
         private int fun_obtener_proximo_id_detalle(int iIdMovimiento, int iIdCuentaOrigen, int iIdOperacion, OdbcConnection connection, OdbcTransaction transaction)
         {
             string sSql = @"
-                SELECT COALESCE(MAX(Pk_Id_Detalle), 0) + 1 
-                FROM Tbl_MovimientoBancarioDetalle
-                WHERE Fk_Id_Movimiento = ? AND Fk_Id_CuentaOrigen = ? AND Fk_Id_Operacion = ?";
+                        SELECT COALESCE(MAX(Pk_Id_Detalle), 0) + 1 
+                        FROM Tbl_MovimientoBancarioDetalle
+                        WHERE Fk_Id_Movimiento = ? AND Fk_Id_CuentaOrigen = ? AND Fk_Id_Operacion = ?";
             using (var cmd = new OdbcCommand(sSql, connection, transaction))
             {
                 cmd.Parameters.Add(new OdbcParameter("@Mov", OdbcType.Int) { Value = iIdMovimiento });
@@ -472,7 +470,7 @@ namespace Capa_Modelo_MB
         }
 
         // ===========================
-        // ANULAR (lógico)
+        // ANULAR 
         // ===========================
         public bool fun_anular_movimiento(int iIdMovimiento, int iIdCuentaOrigen, int iIdOperacion, string sUsuario)
         {
@@ -485,7 +483,7 @@ namespace Capa_Modelo_MB
                 {
                     try
                     {
-                        // 1) Leer datos para reverso
+                        // Leer datos para reverso
                         string sSqlSelect = @"
                             SELECT Cmp_MontoTotal, Fk_Id_Operacion, Fk_Id_CuentaDestino 
                             FROM Tbl_MovimientoBancarioEncabezado 
@@ -514,7 +512,7 @@ namespace Capa_Modelo_MB
                             }
                         }
 
-                        // 2) Reversar saldos
+                        // Reversar saldos
                         string sSigno = fun_obtener_signo_operacion(iIdOperacionActual, odcn_Conn, trx);
                         decimal deFactor = sSigno == "+" ? -1m : 1m; // invertido para reverso
 
@@ -523,7 +521,7 @@ namespace Capa_Modelo_MB
                         if (iIdCuentaDestino.HasValue && iIdCuentaDestino > 0)
                             fun_actualizar_saldo_cuenta(iIdCuentaDestino.Value, deMontoTotal * (deFactor * -1m), odcn_Conn, trx);
 
-                        // 3) Marcar como ANULADO
+                        // Marcar como ANULADO
                         string sSqlUpdate = @"
                             UPDATE Tbl_MovimientoBancarioEncabezado 
                             SET Cmp_Estado = 'ANULADO',
@@ -558,7 +556,7 @@ namespace Capa_Modelo_MB
         }
 
         // ===========================
-        // ELIMINAR (físico)
+        // ELIMINAR
         // ===========================
         public bool fun_eliminar_movimiento_fisico(int iIdMovimiento, int iIdCuentaOrigen, int iIdOperacion)
         {
@@ -572,11 +570,11 @@ namespace Capa_Modelo_MB
                     try
                     {
                         string sSqlSelect = @"
-                            SELECT Cmp_MontoTotal, Fk_Id_Operacion, Fk_Id_CuentaDestino 
-                            FROM Tbl_MovimientoBancarioEncabezado 
-                            WHERE Pk_Id_Movimiento = ? 
-                              AND Fk_Id_CuentaOrigen = ? 
-                              AND Fk_Id_Operacion = ?";
+                                        SELECT Cmp_MontoTotal, Fk_Id_Operacion, Fk_Id_CuentaDestino 
+                                        FROM Tbl_MovimientoBancarioEncabezado 
+                                        WHERE Pk_Id_Movimiento = ? 
+                                          AND Fk_Id_CuentaOrigen = ? 
+                                          AND Fk_Id_Operacion = ?";
 
                         decimal deMontoTotal = 0m;
                         int iIdOperacionActual = 0;
@@ -608,10 +606,10 @@ namespace Capa_Modelo_MB
                             fun_actualizar_saldo_cuenta(iIdCuentaDestino.Value, deMontoTotal * (deFactor * -1m), odcn_Conn, trx);
 
                         string sSqlDeleteDetalles = @"
-                            DELETE FROM Tbl_MovimientoBancarioDetalle 
-                            WHERE Fk_Id_Movimiento = ? 
-                              AND Fk_Id_CuentaOrigen = ? 
-                              AND Fk_Id_Operacion = ?";
+                                                DELETE FROM Tbl_MovimientoBancarioDetalle 
+                                                WHERE Fk_Id_Movimiento = ? 
+                                                  AND Fk_Id_CuentaOrigen = ? 
+                                                  AND Fk_Id_Operacion = ?";
                         using (var cmdDetalles = new OdbcCommand(sSqlDeleteDetalles, odcn_Conn, trx))
                         {
                             cmdDetalles.Parameters.AddWithValue("@Mov", iIdMovimiento);
@@ -621,10 +619,10 @@ namespace Capa_Modelo_MB
                         }
 
                         string sSqlDeleteEncabezado = @"
-                            DELETE FROM Tbl_MovimientoBancarioEncabezado 
-                            WHERE Pk_Id_Movimiento = ? 
-                              AND Fk_Id_CuentaOrigen = ? 
-                              AND Fk_Id_Operacion = ?";
+                                                    DELETE FROM Tbl_MovimientoBancarioEncabezado 
+                                                    WHERE Pk_Id_Movimiento = ? 
+                                                      AND Fk_Id_CuentaOrigen = ? 
+                                                      AND Fk_Id_Operacion = ?";
                         using (var cmdEncabezado = new OdbcCommand(sSqlDeleteEncabezado, odcn_Conn, trx))
                         {
                             cmdEncabezado.Parameters.AddWithValue("@Mov", iIdMovimiento);
@@ -635,7 +633,6 @@ namespace Capa_Modelo_MB
                             if (filasAfectadas == 0)
                                 throw new Exception("No se pudo eliminar el movimiento");
                         }
-
                         trx.Commit();
                         return true;
                     }
@@ -649,7 +646,7 @@ namespace Capa_Modelo_MB
         }
 
         // ===========================
-        // EDITAR (con reverso de saldos si corresponde)
+        // EDITAR con reverso de saldos
         // ===========================
         public bool fun_actualizar_movimiento(
             int iIdMovimiento,
@@ -657,15 +654,16 @@ namespace Capa_Modelo_MB
             int iNuevaOperacion,
             string sNumeroDocumento,
             DateTime dFecha,
-            string sConcepto,
+            string sConcepto,      
             decimal deMontoNuevo,
             int? iTipoPago,
             int? iCuentaDestinoNueva,
-            string sBeneficiario,
+            string sBeneficiario,    
             string sUsuario,
             int iCuentaOrigenOriginal,
             int iOperacionOriginal,
-            string sEstado)
+            string sEstado,
+            int iConciliado)
         {
             using (var odcn_Conn = oCn.fun_conexion_bd())
             {
@@ -677,11 +675,11 @@ namespace Capa_Modelo_MB
                     try
                     {
                         string sSqlSelect = @"
-                            SELECT Cmp_MontoTotal, Fk_Id_CuentaDestino, Cmp_Estado
-                            FROM Tbl_MovimientoBancarioEncabezado
-                            WHERE Pk_Id_Movimiento = ?
-                              AND Fk_Id_CuentaOrigen = ?
-                              AND Fk_Id_Operacion = ?";
+                                        SELECT Cmp_MontoTotal, Fk_Id_CuentaDestino, Cmp_Estado
+                                        FROM Tbl_MovimientoBancarioEncabezado
+                                        WHERE Pk_Id_Movimiento = ?
+                                          AND Fk_Id_CuentaOrigen = ?
+                                          AND Fk_Id_Operacion = ?";
 
                         decimal deMontoViejo = 0m;
                         int? iCuentaDestinoVieja = null;
@@ -733,22 +731,23 @@ namespace Capa_Modelo_MB
                         }
 
                         string sSqlUpdateEncabezado = @"
-                            UPDATE Tbl_MovimientoBancarioEncabezado 
-                            SET Cmp_NumeroDocumento = ?,
-                                Cmp_Fecha = ?,
-                                Cmp_Concepto = ?,
-                                Cmp_MontoTotal = ?,
-                                Fk_Id_TipoPago = ?,
-                                Fk_Id_CuentaDestino = ?,
-                                Cmp_Beneficiario = ?,
-                                Fk_Id_CuentaOrigen = ?,      
-                                Fk_Id_Operacion = ?,       
-                                Cmp_Estado = ?,             
-                                Cmp_UsuarioModifico = ?,
-                                Cmp_FechaModificacion = NOW()
-                            WHERE Pk_Id_Movimiento = ?
-                              AND Fk_Id_CuentaOrigen = ?
-                              AND Fk_Id_Operacion = ?";
+                                                UPDATE Tbl_MovimientoBancarioEncabezado 
+                                                SET Cmp_NumeroDocumento = ?,
+                                                    Cmp_Fecha = ?,
+                                                    Cmp_Concepto = ?,
+                                                    Cmp_MontoTotal = ?,
+                                                    Fk_Id_TipoPago = ?,
+                                                    Fk_Id_CuentaDestino = ?,
+                                                    Cmp_Beneficiario = ?,
+                                                    Fk_Id_CuentaOrigen = ?,      
+                                                    Fk_Id_Operacion = ?,       
+                                                    Cmp_Estado = ?, 
+                                                    Cmp_Conciliado = ?, 
+                                                    Cmp_UsuarioModifico = ?,
+                                                    Cmp_FechaModificacion = NOW()
+                                                WHERE Pk_Id_Movimiento = ?
+                                                  AND Fk_Id_CuentaOrigen = ?
+                                                  AND Fk_Id_Operacion = ?";
 
                         using (var cmdUpd = new OdbcCommand(sSqlUpdateEncabezado, odcn_Conn, trx))
                         {
@@ -762,6 +761,7 @@ namespace Capa_Modelo_MB
                             cmdUpd.Parameters.AddWithValue("@CtaOriNueva", iNuevaCuentaOrigen);
                             cmdUpd.Parameters.AddWithValue("@OpNueva", iNuevaOperacion);
                             cmdUpd.Parameters.AddWithValue("@Estado", sEstado ?? "ACTIVO");
+                            cmdUpd.Parameters.AddWithValue("@Conciliado", iConciliado); 
                             cmdUpd.Parameters.AddWithValue("@Usuario", sUsuario);
                             cmdUpd.Parameters.AddWithValue("@Mov", iIdMovimiento);
                             cmdUpd.Parameters.AddWithValue("@CtaOriOld", iCuentaOrigenOriginal);
@@ -773,12 +773,12 @@ namespace Capa_Modelo_MB
                         }
 
                         string sSqlUpdateDetalles = @"
-                            UPDATE Tbl_MovimientoBancarioDetalle 
-                            SET Fk_Id_CuentaOrigen = ?, 
-                                Fk_Id_Operacion = ?
-                            WHERE Fk_Id_Movimiento = ? 
-                              AND Fk_Id_CuentaOrigen = ? 
-                              AND Fk_Id_Operacion = ?";
+                                                UPDATE Tbl_MovimientoBancarioDetalle 
+                                                SET Fk_Id_CuentaOrigen = ?, 
+                                                    Fk_Id_Operacion = ?
+                                                WHERE Fk_Id_Movimiento = ? 
+                                                  AND Fk_Id_CuentaOrigen = ? 
+                                                  AND Fk_Id_Operacion = ?";
 
                         using (var cmdUpdateDetalles = new OdbcCommand(sSqlUpdateDetalles, odcn_Conn, trx))
                         {
@@ -809,11 +809,11 @@ namespace Capa_Modelo_MB
         {
 
             string s1 = @"
-        UPDATE Tbl_Catalogo_Cuentas
-        SET 
-            Cmp_CtaCargoActual = Cmp_CtaCargoActual + (CASE WHEN ? = 'D' THEN ? ELSE 0 END),
-            Cmp_CtaAbonoActual = Cmp_CtaAbonoActual + (CASE WHEN ? = 'C' THEN ? ELSE 0 END)
-        WHERE Pk_Codigo_Cuenta = ?";
+                        UPDATE Tbl_Catalogo_Cuentas
+                        SET 
+                            Cmp_CtaCargoActual = Cmp_CtaCargoActual + (CASE WHEN ? = 'D' THEN ? ELSE 0 END),
+                            Cmp_CtaAbonoActual = Cmp_CtaAbonoActual + (CASE WHEN ? = 'C' THEN ? ELSE 0 END)
+                        WHERE Pk_Codigo_Cuenta = ?";
             using (var cmd1 = new OdbcCommand(s1, connection, transaction))
             {
                 cmd1.Parameters.AddWithValue("@tipo1", sTipoLinea);
@@ -827,23 +827,18 @@ namespace Capa_Modelo_MB
             }
 
             string s2 = @"
-        UPDATE Tbl_Catalogo_Cuentas
-        SET Cmp_CtaSaldoActual =
-            CASE 
-              WHEN Cmp_CtaNaturaleza = 1 THEN Cmp_CtaSaldoInicial + Cmp_CtaCargoActual - Cmp_CtaAbonoActual
-              ELSE                            Cmp_CtaSaldoInicial - Cmp_CtaCargoActual + Cmp_CtaAbonoActual
-            END
-        WHERE Pk_Codigo_Cuenta = ?";
+                        UPDATE Tbl_Catalogo_Cuentas
+                        SET Cmp_CtaSaldoActual =
+                            CASE 
+                              WHEN Cmp_CtaNaturaleza = 1 THEN Cmp_CtaSaldoInicial + Cmp_CtaCargoActual - Cmp_CtaAbonoActual
+                              ELSE                            Cmp_CtaSaldoInicial - Cmp_CtaCargoActual + Cmp_CtaAbonoActual
+                            END
+                        WHERE Pk_Codigo_Cuenta = ?";
             using (var cmd2 = new OdbcCommand(s2, connection, transaction))
             {
                 cmd2.Parameters.AddWithValue("@cod", sCodigoCuenta);
                 cmd2.ExecuteNonQuery();
             }
         }
-
-
-
-
-
     }
 }

@@ -47,8 +47,7 @@ namespace Capa_Modelo_MB
             SELECT 
                 cb.Pk_Id_CuentaBancaria,
                 cb.Cmp_NumeroCuenta,
-                b.Cmp_NombreBanco,
-                CONCAT(cb.Cmp_NumeroCuenta, ' - ', b.Cmp_NombreBanco) AS CuentaDisplay
+                b.Cmp_NombreBanco
             FROM Tbl_CuentasBancarias cb
             INNER JOIN Tbl_Bancos b ON b.Pk_Id_Banco = cb.Fk_Id_Banco
             WHERE cb.Cmp_Estado = 1
@@ -66,6 +65,7 @@ namespace Capa_Modelo_MB
                 throw new Exception("Error al obtener cuentas bancarias: " + ex.Message);
             }
         }
+
 
         public string fun_obtener_nombre_cuenta_bancaria_por_id(int iIdCuentaBancaria)
         {

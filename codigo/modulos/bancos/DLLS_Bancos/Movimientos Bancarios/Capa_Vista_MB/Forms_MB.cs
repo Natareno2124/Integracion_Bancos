@@ -5,6 +5,7 @@ using System.Data;
 using System.Drawing;
 using System.Linq;
 using System.Text;
+using System.IO;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.Data.Odbc;
@@ -400,60 +401,92 @@ namespace Capa_Vista_MB
                 Cbo_Conciliado.Name = "Cbo_Conciliado";
                 Cbo_Conciliado.Location = new Point(180, 240);
                 Cbo_Conciliado.Size = new Size(100, 20);
-                Cbo_Conciliado.DropDownStyle = ComboBoxStyle.DropDownList;
                 this.Controls.Add(Cbo_Conciliado);
             }
 
-            Cbo_Conciliado.Items.Clear();
-            Cbo_Conciliado.Items.Add(new { Text = "No", Value = 0 });
-            Cbo_Conciliado.Items.Add(new { Text = "Sí", Value = 1 });
+            Cbo_Conciliado.DropDownStyle = ComboBoxStyle.DropDownList;
+
+            DataTable dt = new DataTable();
+            dt.Columns.Add("Value", typeof(int));
+            dt.Columns.Add("Text", typeof(string));
+
+            dt.Rows.Add(0, "No");
+            dt.Rows.Add(1, "Sí");
+
+            Cbo_Conciliado.DataSource = dt;
             Cbo_Conciliado.DisplayMember = "Text";
             Cbo_Conciliado.ValueMember = "Value";
+
             Cbo_Conciliado.SelectedIndex = -1;
         }
 
+
         private void pro_cargar_cuentas_envia()
         {
-            var dt = oSeleccion.fun_obtener_cuentas_bancarias();
-            Cbo_NoCuenta_Envia.DataSource = null;
-            Cbo_NoCuenta_Envia.ValueMember = "Pk_Id_CuentaBancaria";  // INT
-            Cbo_NoCuenta_Envia.DisplayMember = "CuentaDisplay";         // "123-456 - Banco X"
-            Cbo_NoCuenta_Envia.DataSource = dt;
-            Cbo_NoCuenta_Envia.DropDownStyle = ComboBoxStyle.DropDownList;
-            Cbo_NoCuenta_Envia.SelectedIndex = -1;
+            try
+            {
+                var dt = oSeleccion.fun_obtener_cuentas_bancarias(); // columnas: Pk_Id_CuentaBancaria, Cmp_NumeroCuenta, Cmp_NombreBanco
+                if (dt != null && dt.Rows.Count > 0)
+                {
+                    Cbo_NoCuenta_Envia.DataSource = null;
+                    Cbo_NoCuenta_Envia.ValueMember = "Pk_Id_CuentaBancaria";
+                    Cbo_NoCuenta_Envia.DisplayMember = "Cmp_NumeroCuenta";
+                    Cbo_NoCuenta_Envia.DataSource = dt;
+                    Cbo_NoCuenta_Envia.DropDownStyle = ComboBoxStyle.DropDownList;
+                    Cbo_NoCuenta_Envia.SelectedIndex = -1;
+                    Cbo_NoCuenta_Envia.Enabled = true;
+                }
+                else
+                {
+                    Cbo_NoCuenta_Envia.DataSource = null;
+                    Cbo_NoCuenta_Envia.Items.Clear();
+                    Cbo_NoCuenta_Envia.Enabled = false;
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Error al cargar cuentas (envía): " + ex.Message);
+            }
         }
-
 
         private void pro_cargar_cuentas_recibe()
         {
             try
             {
                 var dt = oSeleccion.fun_obtener_cuentas_bancarias();
-                Cbo_NoCuenta_Recibe.DataSource = null;
-                Cbo_NoCuenta_Recibe.ValueMember = "Pk_Id_CuentaBancaria"; // INT
-                Cbo_NoCuenta_Recibe.DisplayMember = "CuentaDisplay";
-                Cbo_NoCuenta_Recibe.DataSource = dt;
-                Cbo_NoCuenta_Recibe.DropDownStyle = ComboBoxStyle.DropDownList;
-                Cbo_NoCuenta_Recibe.SelectedIndex = -1;
-                Cbo_NoCuenta_Recibe.Enabled = false; // se habilita según la operación
+                if (dt != null && dt.Rows.Count > 0)
+                {
+                    Cbo_NoCuenta_Recibe.DataSource = null;
+                    Cbo_NoCuenta_Recibe.ValueMember = "Pk_Id_CuentaBancaria";
+                    Cbo_NoCuenta_Recibe.DisplayMember = "Cmp_NumeroCuenta";
+                    Cbo_NoCuenta_Recibe.DataSource = dt;
+                    Cbo_NoCuenta_Recibe.DropDownStyle = ComboBoxStyle.DropDownList;
+                    Cbo_NoCuenta_Recibe.SelectedIndex = -1;
+                    Cbo_NoCuenta_Recibe.Enabled = false; // se habilita según la operación
+                }
+                else
+                {
+                    Cbo_NoCuenta_Recibe.DataSource = null;
+                    Cbo_NoCuenta_Recibe.Items.Clear();
+                    Cbo_NoCuenta_Recibe.Enabled = false;
+                }
             }
-            catch (Exception ex) { MessageBox.Show("Error al cargar cuentas (recibe): " + ex.Message); }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Error al cargar cuentas (recibe): " + ex.Message);
+            }
         }
 
-        private void Cbo_NoCuenta_Envia_SelectionChangeCommitted(object s, EventArgs e)
+        private void Cbo_NoCuenta_Envia_SelectionChangeCommitted(object sender, EventArgs e)
         {
-            var id = TryGetInt(Cbo_NoCuenta_Envia, "Pk_Id_CuentaBancaria");
-            Txt_NombreCuenta_Envia.Text = id.HasValue ? oSeleccion.fun_obtener_nombre_cuenta_bancaria_por_id(id.Value) : "";
+            if (Cbo_NoCuenta_Envia.SelectedItem is DataRowView drv)
+                Txt_NombreCuenta_Envia.Text = drv["Cmp_NombreBanco"]?.ToString() ?? "";
         }
-
 
         private void Cbo_NoCuenta_Recibe_SelectionChangeCommitted(object sender, EventArgs e)
         {
-            if (Cbo_NoCuenta_Recibe.SelectedValue != null)
-            {
-                int id = Convert.ToInt32(Cbo_NoCuenta_Recibe.SelectedValue);
-                Txt_NombreCuenta_Recibe.Text = oSeleccion.fun_obtener_nombre_cuenta_bancaria_por_id(id);
-            }
+            if (Cbo_NoCuenta_Recibe.SelectedItem is DataRowView drv)
+                Txt_NombreCuenta_Recibe.Text = drv["Cmp_NombreBanco"]?.ToString() ?? "";
         }
 
 
@@ -586,39 +619,39 @@ namespace Capa_Vista_MB
             }
         }
 
-
         private void Cbo_Operacion_SelectionChangeCommitted(object sender, EventArgs e)
         {
-            if (Cbo_Operacion.SelectedValue == null) return;
-            DataRowView drv_Row = Cbo_Operacion.SelectedItem as DataRowView;
-            string sNombreOperacion = drv_Row?["Cmp_nombre"]?.ToString().Trim() ?? string.Empty;
-            bool bHabilitarRecibe = sNombreOperacion.Equals("TRANSFERENCIA_ENVIADA", StringComparison.OrdinalIgnoreCase) ||
-                                    sNombreOperacion.Equals("TRANSFERENCIA_RECIBIDA", StringComparison.OrdinalIgnoreCase);
-            Cbo_NoCuenta_Recibe.Enabled = bHabilitarRecibe;
-            Txt_NombreCuenta_Recibe.Enabled = bHabilitarRecibe;
-            if (!bHabilitarRecibe)
+            var drv = Cbo_Operacion.SelectedItem as DataRowView;
+            if (drv == null)
+                return;
+
+            string nombre = drv["Cmp_nombre"] != null
+                ? drv["Cmp_nombre"].ToString().Replace('_', ' ').Trim()
+                : "";
+
+            //Detectar si es transferencia
+            bool requiereCuentaDestino =
+                nombre.IndexOf("TRANSFERENCIA", StringComparison.OrdinalIgnoreCase) >= 0;
+
+            // Habilitar/deshabilitar campos
+            Cbo_NoCuenta_Recibe.Enabled = requiereCuentaDestino;
+            Txt_NombreCuenta_Recibe.Enabled = requiereCuentaDestino;
+
+            if (!requiereCuentaDestino)
             {
                 Cbo_NoCuenta_Recibe.SelectedIndex = -1;
                 Txt_NombreCuenta_Recibe.Clear();
             }
-            int iIdOperacion = Convert.ToInt32(Cbo_Operacion.SelectedValue);
-            string sSigno = oSeleccion.fun_obtener_signo_operacion_por_id(iIdOperacion);
-            if (sSigno == "+" || sSigno == "-")
-            {
-                if (Cbo_Signo.Items.Count == 0)
-                {
-                    Cbo_Signo.Items.Add("+");
-                    Cbo_Signo.Items.Add("-");
-                }
-                Cbo_Signo.DropDownStyle = ComboBoxStyle.DropDownList;
-                Cbo_Signo.Enabled = false;
-                Cbo_Signo.SelectedItem = sSigno;
-            }
-            else
-            {
-                Cbo_Signo.Enabled = false;
-            }
+
+            // Obtener signo de operación
+            int idOp = Convert.ToInt32(Cbo_Operacion.SelectedValue);
+            string signo = oSeleccion.fun_obtener_signo_operacion_por_id(idOp);
+
+            Cbo_Signo.Enabled = false;
+            if (signo == "+" || signo == "-")
+                Cbo_Signo.SelectedItem = signo;
         }
+
 
         private bool bGuardando = false;
 
@@ -735,7 +768,6 @@ namespace Capa_Vista_MB
                 Lbl_Haber.Text = "Haber: Error";
             }
         }
-
 
         private void pro_actualizar_diferencia()
         {
@@ -1001,17 +1033,14 @@ namespace Capa_Vista_MB
                 iCmp_Conciliado        = 0
             }
         };
-
-                // =========================
                 // GUARDAR EN BD
-                // =========================
                 Cursor.Current = Cursors.WaitCursor;
                 int iIdMovimiento = oCrud.fun_crear_movimiento_con_detalles(movimiento, lst_Detalles);
                 Cursor.Current = Cursors.Default;
 
                 if (iIdMovimiento > 0)
                 {
-                    MessageBox.Show($"¡Movimiento guardado exitosamente!\nNúmero de movimiento: {iIdMovimiento}",
+                    MessageBox.Show($"¡Movimiento guardado exitosamente!",
                         "Éxito", MessageBoxButtons.OK, MessageBoxIcon.Information);
 
                     pro_limpiar_formulario();
@@ -1063,6 +1092,7 @@ namespace Capa_Vista_MB
                 Cbo_Signo.SelectedIndex = -1;
                 Cbo_Estado.SelectedIndex = -1;
                 Cbo_Moneda.SelectedIndex = -1;
+                Cbo_Conciliado.SelectedIndex = -1;
 
                 // Limpiar textos
                 Txt_NombreCuenta_Envia.Clear();
@@ -1098,7 +1128,7 @@ namespace Capa_Vista_MB
             }
         }
 
- 
+
         // =============================================
         // MÉTODO PARA CARGAR TIPOS DE PAGO
         // =============================================
@@ -1210,6 +1240,14 @@ namespace Capa_Vista_MB
                 int iNuevaCuentaOrigen = Convert.ToInt32(Cbo_NoCuenta_Envia.SelectedValue);
                 int iNuevaOperacion = Convert.ToInt32(Cbo_Operacion.SelectedValue);
 
+                int iConciliado = 0;
+                if (Cbo_Conciliado.SelectedValue is int v) iConciliado = v;
+                else if (Cbo_Conciliado.SelectedItem != null)
+                {
+                    var prop = Cbo_Conciliado.SelectedItem.GetType().GetProperty("Value");
+                    if (prop != null) iConciliado = Convert.ToInt32(prop.GetValue(Cbo_Conciliado.SelectedItem));
+                }
+
                 // cuenta/origen u operación
                 bool bCambioClave = Capa_Controldor_MB.Cls_ValidacionesEditar.fun_cambio_clave(
                     iNuevaCuentaOrigen, iCuentaOrigenEditando,
@@ -1307,15 +1345,16 @@ namespace Capa_Vista_MB
                         iNuevaOperacion,
                         Txt_NumeroDocumento.Text.Trim(),
                         Dtp_FechaMovimiento.Value,
-                        Txt_Beneficiario.Text.Trim(),
+                        Txt_Concepto.Text.Trim(),
                         deMonto,
                         iTipoPago,
                         iCuentaDestino,
-                        Txt_Concepto.Text.Trim(),
+                        Txt_Beneficiario.Text.Trim(),
                         Environment.UserName,
                         iCuentaOrigenEditando,
                         iOperacionEditando,
-                        sEstado
+                        sEstado,
+                        iConciliado
                     );
                     Cursor.Current = Cursors.Default;
 
@@ -1348,26 +1387,57 @@ namespace Capa_Vista_MB
         }
 
         //selecciona por ID en un ComboBox cuyo DataSource es un DataTable
-        private bool TrySelectById(ComboBox cbo, string valueMember, int id)
+        private bool TrySelectByValue(ComboBox cbo, object value)
         {
-            if (cbo == null) return false;
-            if (cbo.DataSource is DataTable dt && dt.Columns.Contains(valueMember))
+            if (cbo?.DataSource == null || value == null) return false;
+            var old = cbo.SelectedValue;
+            cbo.SelectedValue = value;
+            if (cbo.SelectedValue == null || cbo.SelectedIndex < 0)
             {
-                bool exists = dt.AsEnumerable().Any(r => !r.IsNull(valueMember) && Convert.ToInt32(r[valueMember]) == id);
-                if (exists) { cbo.SelectedValue = id; return cbo.SelectedIndex >= 0; }
+                // intento por texto (por si el tipo no calza)
+                foreach (var item in cbo.Items)
+                {
+                    if (item is DataRowView drv && Equals(drv[cbo.ValueMember], value))
+                    {
+                        cbo.SelectedItem = item;
+                        return true;
+                    }
+                }
+                cbo.SelectedValue = old;
+                return false;
             }
-            return false;
+            return true;
+        }
+        private bool TrySelectById(ComboBox cbo, string valueMember, object value)
+        {
+            if (cbo?.DataSource == null || value == null) return false;
+
+            cbo.ValueMember = valueMember;
+            cbo.SelectedValue = value;
+
+            if (cbo.SelectedValue == null || cbo.SelectedIndex < 0)
+            {
+                foreach (var item in cbo.Items)
+                {
+                    if (item is DataRowView drv && Equals(drv[valueMember], value))
+                    {
+                        cbo.SelectedItem = item;
+                        return true;
+                    }
+                }
+                return false;
+            }
+            return true;
         }
 
         private void pro_cargar_datos_para_edicion()
         {
             try
             {
-                // Obtener datos crudos
+                // 1) Traer datos crudos del movimiento
                 DataTable dtMovimiento = oSeleccion.fun_obtener_movimiento_por_id(
                     iMovimientoEditandoId, iCuentaOrigenEditando, iOperacionEditando);
 
-                // Validar + mapear a DTO
                 var val = new Capa_Controldor_MB.Cls_EditarValidaciones();
                 var resultado = val.MapearMovimiento(
                     dtMovimiento,
@@ -1383,8 +1453,7 @@ namespace Capa_Vista_MB
 
                 var d = resultado.Data;
 
-                //PINTAR CONTROLES 
-                Cbo_NoCuenta_Envia.SelectedValue = d.FkCuentaOrigen;
+                // 2) Pintar controles base
                 Cbo_Operacion.SelectedValue = d.FkOperacion;
                 Txt_NumeroDocumento.Text = d.NumeroDocumento ?? string.Empty;
                 Dtp_FechaMovimiento.Value = d.Fecha;
@@ -1392,37 +1461,50 @@ namespace Capa_Vista_MB
                 Txt_Monto.Text = d.MontoTotal.ToString("N2");
                 Txt_Beneficiario.Text = d.Beneficiario ?? string.Empty;
 
-                // Estado
                 if (!string.IsNullOrWhiteSpace(d.Estado))
                     Cbo_Estado.SelectedItem = d.Estado;
 
-                // Signo 
                 if (d.Signo == "+" || d.Signo == "-")
                     Cbo_Signo.SelectedItem = d.Signo;
 
-                // Tipo de pago
                 if (d.TipoPagoId.HasValue)
                     Cbo_TipoPago.SelectedValue = d.TipoPagoId.Value;
                 else
                     Cbo_TipoPago.SelectedIndex = -1;
 
-                //  MONEDA
-                // Asegurar que el combo de Monedas esté cargado antes de asignar SelectedValue
-                if (Cbo_Moneda.DataSource == null ||
-                    !(Cbo_Moneda.DataSource is DataTable dtMon) ||
-                    dtMon.Rows.Count == 0)
+                // 3) Asegurar combos de cuentas cargados (bancarias) y seleccionar por ID
+                //    ValueMember esperado: Pk_Id_CuentaBancaria; DisplayMember: Cmp_NumeroCuenta
+                if (Cbo_NoCuenta_Envia.DataSource == null) pro_cargar_cuentas_envia();
+                if (Cbo_NoCuenta_Recibe.DataSource == null) pro_cargar_cuentas_recibe();
+
+                // Origen
+                TrySelectById(Cbo_NoCuenta_Envia, "Pk_Id_CuentaBancaria", d.FkCuentaOrigen);
+                // Nombre (banco) en el textbox
+                Txt_NombreCuenta_Envia.Text = GetBankNameFromCombo(Cbo_NoCuenta_Envia, "Cmp_NombreBanco");
+
+                // Destino (si aplica)
+                bool habilitarRecibe = d.CuentaDestinoId.HasValue;
+                Cbo_NoCuenta_Recibe.Enabled = habilitarRecibe;
+                Txt_NombreCuenta_Recibe.Enabled = habilitarRecibe;
+
+                if (habilitarRecibe)
                 {
-                    pro_cargar_monedas(); // carga el DataSource, DisplayMember, ValueMember, etc.
+                    TrySelectById(Cbo_NoCuenta_Recibe, "Pk_Id_CuentaBancaria", d.CuentaDestinoId.Value);
+                    Txt_NombreCuenta_Recibe.Text = GetBankNameFromCombo(Cbo_NoCuenta_Recibe, "Cmp_NombreBanco");
+                }
+                else
+                {
+                    Cbo_NoCuenta_Recibe.SelectedIndex = -1;
+                    Txt_NombreCuenta_Recibe.Clear();
                 }
 
-                Cbo_Moneda.Enabled = true; // en edición suele ser seleccionable
+                // 4) Moneda (primero DTO; si no, la de la cuenta origen; si nada, sin selección)
+                if (Cbo_Moneda.DataSource == null) pro_cargar_monedas();
+                Cbo_Moneda.Enabled = true;
 
                 bool monedaAsignada = false;
-
                 if (d.MonedaId.HasValue)
-                {
                     monedaAsignada = TrySelectById(Cbo_Moneda, "Pk_Id_Moneda", d.MonedaId.Value);
-                }
 
                 if (!monedaAsignada)
                 {
@@ -1430,40 +1512,48 @@ namespace Capa_Vista_MB
                     if (idMonedaCuenta.HasValue)
                         monedaAsignada = TrySelectById(Cbo_Moneda, "Pk_Id_Moneda", idMonedaCuenta.Value);
                 }
-                // Si no hay match, dejar sin selección 
+
                 if (!monedaAsignada)
-                {
                     Cbo_Moneda.SelectedIndex = -1;
-                }
 
-                // Cuenta destino + nombre
-                if (d.CuentaDestinoId.HasValue)
+                // 5) Conciliado: prioriza el valor del DTO; si no viene, lee desde la grilla
+                int conc = 0;
+
+                // Si tu DTO expone Conciliado como int? o bool?, ajusta estas líneas:
+                var propConc = d.GetType().GetProperty("Conciliado");
+                if (propConc != null)
                 {
-                    Cbo_NoCuenta_Recibe.SelectedValue = d.CuentaDestinoId.Value;
-                    Cbo_NoCuenta_Recibe.Enabled = true;
-                    Txt_NombreCuenta_Recibe.Enabled = true;
-
-                    var nombreDestino = oSeleccion.fun_obtener_nombre_cuenta_catalogo(d.CuentaDestinoId.Value);
-                    Txt_NombreCuenta_Recibe.Text = nombreDestino;
+                    var valConc = propConc.GetValue(d, null);
+                    if (valConc is int ci) conc = ci;
+                    else if (valConc is bool cb) conc = cb ? 1 : 0;
                 }
                 else
                 {
-                    Cbo_NoCuenta_Recibe.SelectedIndex = -1;
-                    Txt_NombreCuenta_Recibe.Clear();
-                    Cbo_NoCuenta_Recibe.Enabled = false;
-                    Txt_NombreCuenta_Recibe.Enabled = false;
+
+                    var row = (Dgv_Detalle_Movimiento.SelectedRows.Count > 0)
+                                ? Dgv_Detalle_Movimiento.SelectedRows[0]
+                                : Dgv_Detalle_Movimiento.CurrentRow;
+
+                    if (row != null && row.Cells["Cmp_Conciliado"] != null)
+                    {
+                        var cellConc = row.Cells["Cmp_Conciliado"].Value;
+                        if (cellConc != null && int.TryParse(cellConc.ToString(), out var tmp))
+                            conc = tmp;
+                    }
+                    {
+                        var cellConc = row.Cells["Cmp_Conciliado"]?.Value;
+                        if (cellConc != null && int.TryParse(cellConc.ToString(), out var tmp))
+                            conc = tmp;
+                    }
                 }
 
-                // Nombre cuenta origen
-                if (Cbo_NoCuenta_Envia.SelectedValue != null)
-                {
-                    int idOri = Convert.ToInt32(Cbo_NoCuenta_Envia.SelectedValue);
-                    Txt_NombreCuenta_Envia.Text = oSeleccion.fun_obtener_nombre_cuenta_catalogo(idOri);
-                }
-                else
-                {
-                    Txt_NombreCuenta_Envia.Clear();
-                }
+                // Reflejar en el combo
+                if (Cbo_Conciliado.DataSource == null && Cbo_Conciliado.Items.Count == 0)
+                    pro_configurar_combo_conciliado();
+
+                Cbo_Conciliado.SelectedValue = conc;
+                if (Cbo_Conciliado.SelectedIndex < 0)
+                    Cbo_Conciliado.SelectedIndex = (conc == 1) ? 1 : 0; // 1 = "Sí", 0 = "No"
             }
             catch (Exception ex)
             {
@@ -1472,9 +1562,31 @@ namespace Capa_Vista_MB
             }
         }
 
+        // Selecciona por ID en un ComboBox cuyo DataSource es un DataTable
+        private bool TrySelectById(ComboBox cbo, string valueMember, int id)
+        {
+            if (cbo == null || cbo.DataSource == null) return false;
+            if (cbo.DataSource is DataTable dt && dt.Columns.Contains(valueMember))
+            {
+                bool exists = dt.AsEnumerable().Any(r => !r.IsNull(valueMember) && Convert.ToInt32(r[valueMember]) == id);
+                if (exists) { cbo.SelectedValue = id; return cbo.SelectedIndex >= 0; }
+            }
+            return false;
+        }
+
+        // Obtiene el nombre del banco desde el DataSource del combo para la fila seleccionada
+        private string GetBankNameFromCombo(ComboBox cbo, string bankNameColumn)
+        {
+            if (cbo?.SelectedItem is DataRowView drv &&
+                drv.Row?.Table.Columns.Contains(bankNameColumn) == true)
+            {
+                return drv[bankNameColumn]?.ToString() ?? string.Empty;
+            }
+            return string.Empty;
+        }
 
 
-         void CargarControlesConDatos(Cls_ValidacionesCargarEdicion.MovimientoEdicionDTO d )
+        void CargarControlesConDatos(Cls_ValidacionesCargarEdicion.MovimientoEdicionDTO d)
         {
             //PINTAR CONTROLES BÁSICOS
             Cbo_NoCuenta_Envia.SelectedValue = d.FkCuentaOrigen;
@@ -1655,6 +1767,41 @@ namespace Capa_Vista_MB
                               MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
+
+        private void Btn_Ayuda_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                // Ruta relativa fija dentro de MV2
+                const string subRutaAyuda = @"ayuda\modulos\bancos\Movimientos Bancarios\Ayuda.chm";
+                // Buscar subiendo desde la carpeta del .exe hasta 10 niveles
+                string rutaEncontrada = null;
+                DirectoryInfo dir = new DirectoryInfo(Application.StartupPath);
+                for (int i = 0; i < 10 && dir != null; i++, dir = dir.Parent)
+                {
+                    string candidata = Path.Combine(dir.FullName, subRutaAyuda);
+                    if (File.Exists(candidata))
+                    {
+                        rutaEncontrada = candidata;
+                        break;
+                    }
+                }
+                //  ruta absoluta de respaldo por si la sabes
+                string rutaAbsolutaRespaldo =
+                    @"C:\Users\dannus\Desktop\MV2\ayuda\modulos\bancos\Movimientos Bancarios\Ayuda.chm";
+                if (rutaEncontrada == null && File.Exists(rutaAbsolutaRespaldo))
+                    rutaEncontrada = rutaAbsolutaRespaldo;
+
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Error al abrir la ayuda:\n" + ex.Message,
+                                "Error",
+                                MessageBoxButtons.OK,
+                                MessageBoxIcon.Error);
+            }
+        }
+
 
     }
 }
