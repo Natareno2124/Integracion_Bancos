@@ -1772,7 +1772,7 @@ namespace Capa_Vista_MB
         {
             try
             {
-                // Ruta relativa fija dentro de MV2
+                // Ruta relativa fija 
                 const string subRutaAyuda = @"ayuda\modulos\bancos\Movimientos Bancarios\Ayuda.chm";
                 // Buscar subiendo desde la carpeta del .exe hasta 10 niveles
                 string rutaEncontrada = null;
@@ -1792,6 +1792,22 @@ namespace Capa_Vista_MB
                 if (rutaEncontrada == null && File.Exists(rutaAbsolutaRespaldo))
                     rutaEncontrada = rutaAbsolutaRespaldo;
 
+                if (rutaEncontrada != null)
+                {
+                    Help.ShowHelp(this, rutaEncontrada);
+                }
+                else
+                {
+                    string intento = Path.Combine(Application.StartupPath, subRutaAyuda);
+                    MessageBox.Show(
+                        "No se encontró el archivo de ayuda.\n\nProbé desde:\n" + intento +
+                        "\n\nSugerencia: coloca 'Ayuda.chm' en la carpeta:\n" + subRutaAyuda +
+                        "\npartiendo desde la raíz de tu proyecto (MV2).",
+                        "Archivo no encontrado",
+                        MessageBoxButtons.OK,
+                        MessageBoxIcon.Warning
+                    );
+                }
             }
             catch (Exception ex)
             {
